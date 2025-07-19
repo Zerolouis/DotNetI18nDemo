@@ -19,6 +19,7 @@ jobs:
 
       - name: 🧹  Sync resx to locales/en
         run: |
+          export BOT_TOKEN=${{ secrets.BOT_TOKEN }}
           bash .github/scripts/sync_resx.sh
 
       - name: 🚀  Push to locales branch with BOT_TOKEN
