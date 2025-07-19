@@ -31,6 +31,7 @@ jobs:
 
       - name: 🚀  Push locales branch
         run: |
+          git remote set-url origin https://x-access-token:${{ secrets.BOT_TOKEN }}@github.com/Zerolouis/DotNetI18nDemo.git
           git push -f origin HEAD:locales
 
 ################################################################################
@@ -48,6 +49,7 @@ jobs:
           # 取 main 源码，再拉 locales 分支的翻译文件
       - name: 🔀  Merge locales into working tree
         run: |
+          git remote set-url origin https://x-access-token:${{ secrets.BOT_TOKEN }}@github.com/Zerolouis/DotNetI18nDemo.git
           git fetch origin locales
           git merge --no-edit --strategy-option ours origin/locales || echo "Already merged"
 
