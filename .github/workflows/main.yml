@@ -16,7 +16,7 @@ on:
 ################################################################################
 jobs:
   sync-resx:
-    if: github.ref == 'refs/heads/main'      # 只在 main 推送时跑
+    if: github.ref == 'refs/heads/master'      # 只在 main 推送时跑
     runs-on: ubuntu-latest
 
     steps:
