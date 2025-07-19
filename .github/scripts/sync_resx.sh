@@ -25,7 +25,7 @@ find "$SRC_DIR" -name '*.resx' \
 # ❸ 提交并强推到 locales 分支
 ###############################################################################
 echo "🚀  commit & push to branch '$BRANCH'"
-git init                                  # 若已是 Git 仓，可删这行
+
 git config user.name  "CI Bot"
 git config user.email "ci@example.com"
 
@@ -36,4 +36,9 @@ if git diff --cached --quiet; then
 fi
 
 git commit -m "sync resx $(date -u +%F)"
+
+# ✅ 加这一行：改 origin 远程地址，使用 Personal Access Token 推送
+git remote set-url origin https://x-access-token:${BOT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
+# ✅ 使用 Token 身份 push
 git push -f origin HEAD:"$BRANCH"
