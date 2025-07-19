@@ -1,0 +1,73 @@
+name: Localization & Build
+
+################################################################################
+# 触发条件
+################################################################################
+# ① 开发者向 main 推代码（.resx 或其它源码）
+# ② Weblate 把翻译 push 到 locales 分支
+# ③ 手动 workflow_dispatch
+on:
+  push:
+    branches: [ master, locales ]
+  workflow_dispatch:
+
+################################################################################
+# job 1: 从 main 分支收集默认 .resx，推到 locales 分支供 Weblate 翻译
+################################################################################
+jobs:
+  sync-resx:
+    if: github.ref == 'refs/heads/main'      # 只在 main 推送时跑
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️  Checkout full repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # 要能推送新分支，必须拿到完整历史
+
+      - name: 🧹  Sync resx to locales/en
+        run: |
+          bash .github/scripts/sync_resx.sh   # 前面写好的脚本
+
+      - name: 🚀  Push locales branch
+        run: |
+          git push -f origin HEAD:locales
+
+################################################################################
+# job 2: 编译出多语言卫星 dll，并上传制品
+################################################################################
+  build:
+    needs: [sync-resx]               # 只有 sync-resx 成功或分支是 locales 时才编
+    runs-on: windows-latest          # .NET 4.8 → 用 Windows runner
+
+    steps:
+      - name: ⬇️  Checkout (main + locales)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # 取 main 源码，再拉 locales 分支的翻译文件
+      - name: 🔀  Merge locales into working tree
+        run: |
+          git fetch origin locales
+          git merge --no-edit --strategy-option ours origin/locales || echo "Already merged"
+
+      - name: 🛠️  Setup MSBuild (VS BuildTools)
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: 🛠️  Restore NuGet (若有)
+        run: nuget restore TranslateDLL.sln
+
+      - name: ⚙️  Build Release + 卫星 DLL
+        run: |
+          msbuild TranslateDLL.sln `
+            /p:Configuration=Release `
+            /p:Platform="Any CPU" `
+            /verbosity:minimal
+
+      - name: 📦  Upload artifacts (exe + satellites)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app_release
+          path: |
+            TranslateDLL/bin/Release/TranslateDLL.exe
+            TranslateDLL/bin/Release/**/TranslateDLL.resources.dll
